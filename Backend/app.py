@@ -1,7 +1,7 @@
 import os
 from flask import Flask, render_template, request, session, redirect, url_for
 from dotenv import load_dotenv
-from main import generate_questions, evaluate_answers
+from Backend.main import generate_questions, evaluate_answers
 
 load_dotenv()
 
