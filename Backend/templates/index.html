@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Study Hall — Study Smarter</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Study Hall</h1>
+      <p>Turn your notes into a personalized quiz in seconds</p>
+    </header>
+
+    {% if error %}
+    <div class="error">{{ error }}</div>
+    {% endif %}
+
+    <div class="card" style="animation-delay: 0.1s">
+      <form method="POST" action="/generate" id="mainForm">
+        <div class="form-group">
+          <label for="notes">Your Notes</label>
+          <textarea
+            name="notes"
+            id="notes"
+            placeholder="Paste your lecture notes, textbook sections, or study material here…"
+            required
+          >{{ notes or '' }}</textarea>
+          <div class="word-count" id="wordCount">0 words</div>
+        </div>
+
+        <div class="form-group">
+          <label for="count">Number of Questions</label>
+          <input
+            type="number"
+            name="count"
+            id="count"
+            value="{{ count or 5 }}"
+            min="1"
+            max="20"
+          >
+        </div>
+
+        <button type="submit" class="btn" id="submitBtn">
+          <span class="btn-label">Start Quiz</span>
+          <span class="spinner" hidden></span>
+        </button>
+      </form>
+    </div>
+
+    <p class="footer-note">Study Hall analyzes your notes and builds a custom quiz to find your weak spots.</p>
+  </div>
+
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+  <script>
+    const notesEl = document.getElementById('notes');
+    const wordCountEl = document.getElementById('wordCount');
+
+    function updateWordCount() {
+      const words = notesEl.value.trim().split(/\s+/).filter(Boolean).length;
+      wordCountEl.textContent = words + ' word' + (words !== 1 ? 's' : '');
+      wordCountEl.classList.toggle('has-content', words > 0);
+    }
+
+    notesEl.addEventListener('input', updateWordCount);
+    updateWordCount();
+
+    document.getElementById('mainForm').addEventListener('submit', function () {
+      const btn = document.getElementById('submitBtn');
+      btn.querySelector('.btn-label').textContent = 'Building your quiz…';
+      btn.querySelector('.spinner').hidden = false;
+      btn.disabled = true;
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quiz — Study Hall</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Study Hall</h1>
+      <p>No peeking — answer from memory</p>
+    </header>
+
+    {% if error %}
+    <div class="error">{{ error }}</div>
+    {% endif %}
+
+    <form method="POST" action="/submit" id="quizForm">
+
+      <div class="quiz-progress">
+        <div class="progress-meta">
+          <span id="progressLabel">0 of {{ questions | length }} answered</span>
+          <span id="progressPct">0%</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+      </div>
+
+      {% for q in questions %}
+      <div class="question-card" data-index="{{ loop.index0 }}">
+        <div class="question-number">Question {{ loop.index }} of {{ questions | length }}</div>
+        <div class="topic-badge">{{ q.topic }}</div>
+        <div class="question-text">{{ q.question }}</div>
+        <textarea
+          name="answer_{{ loop.index0 }}"
+          placeholder="Your answer…"
+          rows="3"
+          required
+        ></textarea>
+      </div>
+      {% endfor %}
+
+      <div class="actions">
+        <button type="submit" class="btn" id="submitBtn">
+          <span class="btn-label">See Results</span>
+          <span class="spinner" hidden></span>
+        </button>
+        <a href="/" class="btn btn-secondary">Start Over</a>
+      </div>
+    </form>
+  </div>
+
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+  <script>
+    const total = {{ questions | length }};
+    const answers = document.querySelectorAll('textarea[name^="answer_"]');
+    const fillEl = document.getElementById('progressFill');
+    const labelEl = document.getElementById('progressLabel');
+    const pctEl = document.getElementById('progressPct');
+
+    function updateProgress() {
+      const filled = [...answers].filter(t => t.value.trim().length > 0).length;
+      const pct = total > 0 ? Math.round((filled / total) * 100) : 0;
+      fillEl.style.width = pct + '%';
+      labelEl.textContent = filled + ' of ' + total + ' answered';
+      pctEl.textContent = pct + '%';
+    }
+
+    answers.forEach(t => t.addEventListener('input', updateProgress));
+
+    // Stagger cards in
+    staggerIn('.question-card', 80);
+
+    document.getElementById('quizForm').addEventListener('submit', function () {
+      const btn = document.getElementById('submitBtn');
+      btn.querySelector('.btn-label').textContent = 'Scoring your quiz…';
+      btn.querySelector('.spinner').hidden = false;
+      btn.disabled = true;
+    });
+  </script>
+</body>
+</html>

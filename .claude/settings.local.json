@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(New-Item -ItemType Directory -Force \"c:\\\\Programs\\\\Projects\\\\Study help \\(UNM\\)\\\\Frontend\\\\templates\")",
+      "PowerShell(New-Item -ItemType Directory -Force \"c:\\\\Programs\\\\Projects\\\\Study help \\(UNM\\)\\\\Frontend\\\\static\")"
+    ]
+  }
+}

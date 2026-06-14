@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Results — Study Hall</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Your Results</h1>
+      <p>Here's what you know and where to focus next</p>
+    </header>
+
+    <div class="card" style="animation-delay: 0.05s">
+      <h2>Score Summary</h2>
+      <div class="feedback-box" id="feedbackBox"></div>
+    </div>
+
+    <div class="card" style="animation-delay: 0.15s">
+      <h2>Question Breakdown</h2>
+      {% for q in questions %}
+      <div class="result-item" data-index="{{ loop.index0 }}">
+        <div class="topic-badge">{{ q.topic }}</div>
+        <div class="result-q">{{ q.question }}</div>
+        <div class="answer-row">
+          <div class="answer-block">
+            <label>Your answer</label>
+            <div class="answer-text">{{ user_answers[loop.index0] or '(no answer given)' }}</div>
+          </div>
+          <div class="answer-block">
+            <label>Correct answer</label>
+            <div class="answer-text correct">{{ q.answer }}</div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <div class="actions" style="animation: fadeInUp 0.5s 0.3s ease both; opacity: 0; animation-fill-mode: both;">
+      <a href="/" class="btn">Study Again</a>
+    </div>
+
+    <p class="footer-note">Study Hall scores your answers based on the concepts in your notes.</p>
+  </div>
+
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+  <script>
+    // Render markdown feedback
+    const raw = {{ feedback | tojson }};
+    document.getElementById('feedbackBox').innerHTML = marked.parse(raw);
+
+    // Stagger result items in after a short delay
+    setTimeout(() => staggerIn('.result-item', 100), 200);
+
+    // Confetti burst on load
+    confetti({
+      particleCount: 120,
+      spread: 80,
+      origin: { y: 0.55 },
+      colors: ['#6366f1', '#8b5cf6', '#a78bfa', '#c4b5fd', '#ffffff'],
+      disableForReducedMotion: true,
+    });
+  </script>
+</body>
+</html>
