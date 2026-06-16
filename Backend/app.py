@@ -4,6 +4,7 @@ from datetime import timedelta
 
 from flask import Flask, render_template, request, session, redirect, url_for
 from flask_login import current_user
+from werkzeug.middleware.proxy_fix import ProxyFix
 from dotenv import load_dotenv
 
 from Backend.main import generate_questions, evaluate_answers
@@ -13,6 +14,7 @@ from Backend.models import User
 load_dotenv()
 
 app = Flask(__name__)
+app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 app.secret_key = os.environ.get('SECRET_KEY', secrets.token_hex(32))
 
 # ── Database ──────────────────────────────────────────────────────────────────
