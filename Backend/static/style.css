@@ -517,6 +517,126 @@ input[type="number"] { max-width: 110px; }
   margin-top: 2rem;
 }
 
+/* ── Header row (title + user nav) ──────────────────── */
+.header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+/* ── User nav ────────────────────────────────────────── */
+.user-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-shrink: 0;
+  padding-top: 0.35rem;
+}
+
+.user-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--orange);
+  flex-shrink: 0;
+}
+
+.user-name {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--grey-700);
+  max-width: 110px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.btn-sm {
+  padding: 0.42rem 0.9rem !important;
+  font-size: 0.69rem !important;
+  clip-path: polygon(0 0, calc(100% - 7px) 0, 100% 7px, 100% 100%, 0 100%) !important;
+}
+
+/* ── Auth pages ──────────────────────────────────────── */
+.auth-container { max-width: 420px; }
+
+.brand-link { text-decoration: none; color: inherit; }
+.brand-link:hover h1 { opacity: 0.8; }
+
+.field-optional {
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--grey-500);
+  font-size: 0.7rem;
+}
+
+/* Google sign-in button */
+.btn-google {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: var(--white);
+  border: 1.5px solid var(--grey-300);
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--grey-700);
+  text-decoration: none;
+  cursor: pointer;
+  font-family: inherit;
+  transition: filter 0.15s ease, transform 0.15s ease,
+              background-color 0.4s ease, color 0.35s ease, border-color 0.35s ease;
+}
+
+.btn-google:hover {
+  filter: drop-shadow(0 4px 12px rgba(0,0,0,0.12));
+  transform: translateY(-1px);
+  color: var(--grey-900);
+}
+
+/* "or" divider */
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 1.25rem 0;
+  color: var(--grey-500);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--grey-200);
+}
+
+/* "Already have an account?" link */
+.auth-switch {
+  text-align: center;
+  font-size: 0.82rem;
+  color: var(--grey-500);
+  margin-top: 1.25rem;
+}
+
+.auth-switch a {
+  color: var(--orange);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.auth-switch a:hover { text-decoration: underline; }
+
 /* ── Dark Mode Toggle ────────────────────────────────── */
 .theme-toggle {
   position: fixed;

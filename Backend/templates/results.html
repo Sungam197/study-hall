@@ -12,8 +12,24 @@
 <body>
   <div class="container">
     <header>
-      <h1>Your Results</h1>
-      <p>Here's what you know and where to focus next</p>
+      <div class="header-row">
+        <div>
+          <h1>Your Results</h1>
+          <p>Here's what you know and where to focus next</p>
+        </div>
+        <div class="user-nav">
+          {% if current_user.is_authenticated %}
+            {% if current_user.avatar_url %}
+            <img src="{{ current_user.avatar_url }}" alt="" class="user-avatar">
+            {% endif %}
+            <span class="user-name">{{ current_user.display_name }}</span>
+            <form method="POST" action="{{ url_for('auth.logout') }}">
+              <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" class="btn btn-secondary btn-sm">Sign Out</button>
+            </form>
+          {% endif %}
+        </div>
+      </div>
     </header>
 
     <div class="card" style="animation-delay: 0.05s">
@@ -50,14 +66,11 @@
 
   <script src="{{ url_for('static', filename='app.js') }}"></script>
   <script>
-    // Render markdown feedback
     const raw = {{ feedback | tojson }};
     document.getElementById('feedbackBox').innerHTML = marked.parse(raw);
 
-    // Stagger result items in after a short delay
     setTimeout(() => staggerIn('.result-item', 100), 200);
 
-    // Confetti burst on load
     confetti({
       particleCount: 120,
       spread: 80,

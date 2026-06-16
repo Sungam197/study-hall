@@ -1,4 +1,7 @@
 anthropic
 flask
+flask-login
+flask-sqlalchemy
+authlib
 python-dotenv
 gunicorn

@@ -10,8 +10,24 @@
 <body>
   <div class="container">
     <header>
-      <h1>Study Hall</h1>
-      <p>No peeking — answer from memory</p>
+      <div class="header-row">
+        <div>
+          <h1>Study Hall</h1>
+          <p>No peeking — answer from memory</p>
+        </div>
+        <div class="user-nav">
+          {% if current_user.is_authenticated %}
+            {% if current_user.avatar_url %}
+            <img src="{{ current_user.avatar_url }}" alt="" class="user-avatar">
+            {% endif %}
+            <span class="user-name">{{ current_user.display_name }}</span>
+            <form method="POST" action="{{ url_for('auth.logout') }}">
+              <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" class="btn btn-secondary btn-sm">Sign Out</button>
+            </form>
+          {% endif %}
+        </div>
+      </div>
     </header>
 
     {% if error %}
@@ -56,11 +72,11 @@
 
   <script src="{{ url_for('static', filename='app.js') }}"></script>
   <script>
-    const total = {{ questions | length }};
+    const total   = {{ questions | length }};
     const answers = document.querySelectorAll('textarea[name^="answer_"]');
-    const fillEl = document.getElementById('progressFill');
+    const fillEl  = document.getElementById('progressFill');
     const labelEl = document.getElementById('progressLabel');
-    const pctEl = document.getElementById('progressPct');
+    const pctEl   = document.getElementById('progressPct');
 
     function updateProgress() {
       const filled = [...answers].filter(t => t.value.trim().length > 0).length;
@@ -72,7 +88,6 @@
 
     answers.forEach(t => t.addEventListener('input', updateProgress));
 
-    // Stagger cards in
     staggerIn('.question-card', 80);
 
     document.getElementById('quizForm').addEventListener('submit', function () {
