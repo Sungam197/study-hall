@@ -9,13 +9,20 @@ class User(UserMixin, db.Model):
 
     id            = db.Column(db.Integer, primary_key=True)
     email         = db.Column(db.String(120), unique=True, nullable=False, index=True)
-    password_hash = db.Column(db.String(255), nullable=True)   # None for Google-only accounts
+    password_hash = db.Column(db.String(255), nullable=True)
     google_id     = db.Column(db.String(120), unique=True, nullable=True)
     name          = db.Column(db.String(120), nullable=True)
     avatar_url    = db.Column(db.String(500), nullable=True)
     created_at    = db.Column(db.DateTime, default=datetime.utcnow)
     last_login_at = db.Column(db.DateTime, nullable=True)
-    last_login_ip = db.Column(db.String(45), nullable=True)    # supports IPv6
+    last_login_ip = db.Column(db.String(45), nullable=True)
+
+    # ── Payment ───────────────────────────────────────────
+    has_used_free = db.Column(db.Boolean, default=False, nullable=False)
+    has_paid      = db.Column(db.Boolean, default=False, nullable=False)
+
+    # ── Single-device enforcement ─────────────────────────
+    session_token = db.Column(db.String(64), nullable=True, index=True)
 
     # --- password helpers ---
 

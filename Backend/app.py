@@ -2,13 +2,14 @@ import os
 import secrets
 from datetime import timedelta
 
+import stripe
 from flask import Flask, render_template, request, session, redirect, url_for
-from flask_login import current_user
+from flask_login import current_user, logout_user
 from werkzeug.middleware.proxy_fix import ProxyFix
 from dotenv import load_dotenv
 
 from Backend.main import generate_questions, evaluate_answers
-from Backend.extensions import db, login_manager, oauth
+from Backend.extensions import db, login_manager, migrate, oauth
 from Backend.models import User
 
 load_dotenv()
@@ -18,20 +19,23 @@ app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 app.secret_key = os.environ.get('SECRET_KEY', secrets.token_hex(32))
 
 # ── Database ──────────────────────────────────────────────────────────────────
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get(
-    'DATABASE_URL', 'sqlite:///studyhall.db'
-)
+_db_url = os.environ.get('DATABASE_URL', 'sqlite:///studyhall.db')
+if _db_url.startswith('postgres://'):          # Render gives postgres://, SQLAlchemy needs postgresql://
+    _db_url = _db_url.replace('postgres://', 'postgresql://', 1)
+app.config['SQLALCHEMY_DATABASE_URI'] = _db_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# ── Remember-me cookie (30 days, secure defaults) ─────────────────────────────
+# ── Remember-me cookie (30 days) ──────────────────────────────────────────────
 app.config['REMEMBER_COOKIE_DURATION']  = timedelta(days=30)
 app.config['REMEMBER_COOKIE_HTTPONLY']  = True
 app.config['REMEMBER_COOKIE_SAMESITE'] = 'Lax'
-# Enable in production behind HTTPS:
-# app.config['REMEMBER_COOKIE_SECURE'] = True
+
+# ── Stripe ────────────────────────────────────────────────────────────────────
+stripe.api_key = os.environ.get('STRIPE_SECRET_KEY')
 
 # ── Init extensions ───────────────────────────────────────────────────────────
 db.init_app(app)
+migrate.init_app(app, db)
 
 login_manager.init_app(app)
 login_manager.login_view    = 'auth.login'
@@ -51,21 +55,41 @@ oauth.register(
 )
 
 # ── Auth blueprint ────────────────────────────────────────────────────────────
-from Backend.auth import auth_bp          # noqa: E402 (must come after oauth.register)
+from Backend.auth import auth_bp          # noqa: E402
 app.register_blueprint(auth_bp)
 
-# ── CSRF token available in every template ────────────────────────────────────
+# ── Template globals ──────────────────────────────────────────────────────────
 @app.context_processor
-def inject_csrf():
+def inject_globals():
     def csrf_token():
         if '_csrf_token' not in session:
             session['_csrf_token'] = secrets.token_hex(32)
         return session['_csrf_token']
     return dict(csrf_token=csrf_token)
 
-# ── Create tables on first run ────────────────────────────────────────────────
+# ── Create tables (new deployments) ──────────────────────────────────────────
 with app.app_context():
     db.create_all()
+
+# ── Single-device enforcement ─────────────────────────────────────────────────
+@app.before_request
+def enforce_single_device():
+    if not current_user.is_authenticated:
+        return
+    stored       = current_user.session_token
+    device_token = session.get('_device_token')
+
+    if stored is None and device_token is None:
+        # Pre-feature session: assign a token so future logins are blocked
+        new_token = secrets.token_hex(32)
+        current_user.session_token = new_token
+        session['_device_token'] = new_token
+        db.session.commit()
+    elif stored is None or stored != device_token:
+        # Token was cleared (user logged out on another device) → sign out here too
+        logout_user()
+        session.clear()
+        return redirect(url_for('auth.login'))
 
 
 # ── Routes ────────────────────────────────────────────────────────────────────
@@ -79,6 +103,10 @@ def index():
 def generate():
     if not current_user.is_authenticated:
         return redirect(url_for('auth.login'))
+
+    # Paywall: block after 1 free use
+    if current_user.has_used_free and not current_user.has_paid:
+        return render_template('index.html', paywall=True)
 
     notes     = request.form.get('notes', '').strip()
     count_raw = request.form.get('count', '5').strip()
@@ -101,6 +129,11 @@ def generate():
         return render_template('index.html',
                                error=f'Generation failed: {e}',
                                notes=notes, count=count_raw)
+
+    # Mark free use on first quiz
+    if not current_user.has_used_free:
+        current_user.has_used_free = True
+        db.session.commit()
 
     session['questions'] = questions
     return render_template('quiz.html', questions=questions)
@@ -131,6 +164,57 @@ def submit():
                            questions=questions,
                            user_answers=user_answers,
                            feedback=feedback)
+
+
+# ── Stripe checkout ───────────────────────────────────────────────────────────
+
+@app.route('/checkout', methods=['POST'])
+def checkout():
+    if not current_user.is_authenticated:
+        return redirect(url_for('auth.login'))
+
+    # CSRF check
+    if session.get('_csrf_token') != request.form.get('_csrf_token'):
+        return redirect(url_for('index'))
+
+    checkout_session = stripe.checkout.Session.create(
+        payment_method_types=['card'],
+        line_items=[{'price': os.environ.get('STRIPE_PRICE_ID', ''), 'quantity': 1}],
+        mode='payment',
+        success_url=url_for('payment_success', _external=True),
+        cancel_url=url_for('index', _external=True),
+        customer_email=current_user.email,
+        metadata={'user_id': str(current_user.id)},
+    )
+    return redirect(checkout_session.url, code=303)
+
+
+@app.route('/payment-success')
+def payment_success():
+    return render_template('payment_success.html')
+
+
+@app.route('/webhook', methods=['POST'])
+def stripe_webhook():
+    payload   = request.get_data(as_text=False)
+    sig       = request.headers.get('Stripe-Signature', '')
+    secret    = os.environ.get('STRIPE_WEBHOOK_SECRET', '')
+
+    try:
+        event = stripe.Webhook.construct_event(payload, sig, secret)
+    except (ValueError, stripe.SignatureVerificationError):
+        return '', 400
+
+    if event['type'] == 'checkout.session.completed':
+        data    = event['data']['object']
+        user_id = (data.get('metadata') or {}).get('user_id')
+        if user_id:
+            user = db.session.get(User, int(user_id))
+            if user:
+                user.has_paid = True
+                db.session.commit()
+
+    return '', 200
 
 
 if __name__ == '__main__':

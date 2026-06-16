@@ -28,6 +28,24 @@
     <div class="error">{{ error }}</div>
     {% endif %}
 
+    {% if blocked %}
+    <div class="card" style="animation-delay: 0.1s">
+      <h2>Already signed in</h2>
+      <p style="color: var(--grey-500); font-size: 0.9rem; line-height: 1.7; margin-bottom: 1.5rem;">
+        This account is active on another device. Sign out there first, then come back here.
+      </p>
+      <p style="font-size: 0.78rem; color: var(--grey-500); margin-top: 1rem;">
+        Already signed out everywhere but still seeing this?
+        <form method="POST" action="{{ url_for('auth.login') }}" style="display:inline">
+          <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
+          <input type="hidden" name="force" value="1">
+          <button type="submit" style="background:none;border:none;color:var(--orange);cursor:pointer;font-size:0.78rem;font-weight:600;padding:0;text-decoration:underline;">
+            Sign in here anyway.
+          </button>
+        </form>
+      </p>
+    </div>
+    {% else %}
     <div class="card" style="animation-delay: 0.1s">
       <h2>Welcome back</h2>
 
@@ -61,6 +79,8 @@
         </div>
       </form>
     </div>
+
+    {% endif %}
 
     <p class="auth-switch">No account? <a href="{{ url_for('auth.register') }}">Create one free</a></p>
   </div>

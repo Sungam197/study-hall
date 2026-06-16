@@ -24,6 +24,12 @@
         </div>
         <div class="user-nav">
           {% if current_user.is_authenticated %}
+            {% if not current_user.has_paid %}
+            <form method="POST" action="{{ url_for('checkout') }}">
+              <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" class="btn btn-buy btn-sm">Upgrade</button>
+            </form>
+            {% endif %}
             {% if current_user.avatar_url %}
             <img src="{{ current_user.avatar_url }}" alt="" class="user-avatar">
             {% endif %}
@@ -43,6 +49,18 @@
     <div class="error">{{ error }}</div>
     {% endif %}
 
+    {% if paywall %}
+    <div class="card paywall-card" style="animation-delay: 0.05s">
+      <h2>Free Quiz Used</h2>
+      <p class="paywall-msg">You've completed your free quiz. Upgrade to Study Hall Pro to generate unlimited quizzes.</p>
+      <div class="actions" style="margin-top: 1.5rem">
+        <form method="POST" action="{{ url_for('checkout') }}">
+          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="btn btn-buy">Buy Study Hall Pro</button>
+        </form>
+      </div>
+    </div>
+    {% else %}
     <div class="card" style="animation-delay: 0.1s">
       <form method="POST" action="/generate" id="mainForm"
             data-authed="{{ 'true' if current_user.is_authenticated else 'false' }}"
@@ -78,35 +96,40 @@
         </button>
       </form>
     </div>
+    {% endif %}
 
     <p class="footer-note">Study Hall analyzes your notes and builds a custom quiz to find your weak spots.</p>
   </div>
 
   <script src="{{ url_for('static', filename='app.js') }}"></script>
   <script>
-    const notesEl    = document.getElementById('notes');
+    const notesEl     = document.getElementById('notes');
     const wordCountEl = document.getElementById('wordCount');
 
-    function updateWordCount() {
-      const words = notesEl.value.trim().split(/\s+/).filter(Boolean).length;
-      wordCountEl.textContent = words + ' word' + (words !== 1 ? 's' : '');
-      wordCountEl.classList.toggle('has-content', words > 0);
+    if (notesEl) {
+      function updateWordCount() {
+        const words = notesEl.value.trim().split(/\s+/).filter(Boolean).length;
+        wordCountEl.textContent = words + ' word' + (words !== 1 ? 's' : '');
+        wordCountEl.classList.toggle('has-content', words > 0);
+      }
+      notesEl.addEventListener('input', updateWordCount);
+      updateWordCount();
     }
 
-    notesEl.addEventListener('input', updateWordCount);
-    updateWordCount();
-
-    document.getElementById('mainForm').addEventListener('submit', function (e) {
-      if (this.dataset.authed !== 'true') {
-        e.preventDefault();
-        window.location.href = this.dataset.loginUrl;
-        return;
-      }
-      const btn = document.getElementById('submitBtn');
-      btn.querySelector('.btn-label').textContent = 'Building your quiz…';
-      btn.querySelector('.spinner').hidden = false;
-      btn.disabled = true;
-    });
+    const mainForm = document.getElementById('mainForm');
+    if (mainForm) {
+      mainForm.addEventListener('submit', function (e) {
+        if (this.dataset.authed !== 'true') {
+          e.preventDefault();
+          window.location.href = this.dataset.loginUrl;
+          return;
+        }
+        const btn = document.getElementById('submitBtn');
+        btn.querySelector('.btn-label').textContent = 'Building your quiz…';
+        btn.querySelector('.spinner').hidden = false;
+        btn.disabled = true;
+      });
+    }
   </script>
 </body>
 </html>

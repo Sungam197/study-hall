@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payment Successful — Study Hall</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <script>!function(){var t=localStorage.getItem('studyhall-theme')||((window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light');if(t==='dark')document.documentElement.setAttribute('data-theme','dark')}()</script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+</head>
+<body>
+  <div class="geo-bg" aria-hidden="true">
+    <div class="geo geo-a"></div>
+    <div class="geo geo-b"></div>
+    <div class="geo geo-c"></div>
+    <div class="geo geo-d"></div>
+    <div class="geo geo-e"></div>
+  </div>
+
+  <div class="container auth-container" style="text-align: center; padding-top: 5rem;">
+    <header style="border-left: none; padding-left: 0; text-align: center; animation-delay: 0s">
+      <h1>Study <span class="accent">Hall</span></h1>
+    </header>
+
+    <div class="card" style="animation-delay: 0.1s; text-align: left">
+      <h2>Payment Successful</h2>
+      <p style="font-size: 1.05rem; font-weight: 600; color: var(--grey-900); margin-bottom: 0.5rem;">
+        You're all set!
+      </p>
+      <p style="color: var(--grey-500); font-size: 0.9rem; line-height: 1.7; margin-bottom: 1.5rem;">
+        Your Study Hall Pro access is now active. Generate as many quizzes as you need.
+      </p>
+      <div class="actions">
+        <a href="{{ url_for('index') }}" class="btn">Start Studying</a>
+      </div>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+  <script>
+    confetti({
+      particleCount: 150,
+      spread: 90,
+      origin: { y: 0.5 },
+      colors: ['#F97316', '#FFEDD5', '#C2410C', '#ffffff', '#FCD34D'],
+      disableForReducedMotion: true,
+    });
+  </script>
+</body>
+</html>

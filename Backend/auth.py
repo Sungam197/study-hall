@@ -34,12 +34,17 @@ def _get_ip() -> str:
 
 
 def _safe_next(next_url: str | None) -> str:
-    """Return next_url only if it's a safe relative path (blocks open redirects)."""
     if next_url:
         parsed = urlparse(next_url)
         if not parsed.netloc and not parsed.scheme and next_url.startswith('/'):
             return next_url
     return url_for('index')
+
+
+def _issue_session_token(user: User) -> None:
+    token = secrets.token_hex(32)
+    user.session_token = token
+    session['_device_token'] = token
 
 
 _EMAIL_RE = re.compile(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
@@ -51,25 +56,50 @@ def login():
     if current_user.is_authenticated:
         return redirect(url_for('index'))
 
-    error = None
+    error   = None
+    blocked = False
+
     if request.method == 'POST':
-        if not _validate_csrf():
+        force = request.form.get('force') == '1'
+
+        if force:
+            # Escape hatch for stuck sessions (cleared cookies without logging out)
+            pending_id = session.pop('_pending_force_id', None)
+            if pending_id and _validate_csrf():
+                user = db.session.get(User, int(pending_id))
+                if user:
+                    user.record_login(_get_ip())
+                    _issue_session_token(user)
+                    db.session.commit()
+                    login_user(user, remember=True, duration=timedelta(days=30))
+                    return redirect(_safe_next(request.args.get('next')))
+            error = 'Something went wrong — please try again.'
+
+        elif not _validate_csrf():
             error = 'Invalid request — please try again.'
+
         else:
             email    = request.form.get('email', '').strip().lower()
             password = request.form.get('password', '')
             user     = User.query.filter_by(email=email).first()
 
             if user and user.check_password(password):
-                user.record_login(_get_ip())
-                db.session.commit()
-                login_user(user, remember=True, duration=timedelta(days=30))
-                return redirect(_safe_next(request.args.get('next')))
-
-            error = 'Incorrect email or password.'
+                if user.session_token is not None:
+                    # Already active on another device — block it
+                    session['_pending_force_id'] = user.id
+                    blocked = True
+                else:
+                    user.record_login(_get_ip())
+                    _issue_session_token(user)
+                    db.session.commit()
+                    login_user(user, remember=True, duration=timedelta(days=30))
+                    return redirect(_safe_next(request.args.get('next')))
+            else:
+                error = 'Incorrect email or password.'
 
     return render_template('auth/login.html',
                            error=error,
+                           blocked=blocked,
                            csrf_token=_get_csrf_token())
 
 
@@ -101,6 +131,7 @@ def register():
                 user.set_password(password)
                 user.record_login(_get_ip())
                 db.session.add(user)
+                _issue_session_token(user)
                 db.session.commit()
                 login_user(user, remember=True, duration=timedelta(days=30))
                 return redirect(url_for('index'))
@@ -115,6 +146,9 @@ def register():
 def logout():
     if not _validate_csrf():
         return redirect(url_for('index'))
+    # Clear token so another device can now log in
+    current_user.session_token = None
+    db.session.commit()
     logout_user()
     return redirect(url_for('index'))
 
@@ -136,7 +170,7 @@ def google_callback():
     except Exception:
         return redirect(url_for('auth.login'))
 
-    userinfo = token.get('userinfo') or {}
+    userinfo   = token.get('userinfo') or {}
     google_id  = userinfo.get('sub')
     email      = (userinfo.get('email') or '').lower()
     name       = userinfo.get('name')
@@ -147,7 +181,6 @@ def google_callback():
 
     user = User.query.filter_by(google_id=google_id).first()
     if not user:
-        # Try to link an existing email account
         user = User.query.filter_by(email=email).first()
         if user:
             user.google_id  = google_id
@@ -158,7 +191,17 @@ def google_callback():
                         name=name, avatar_url=avatar_url)
             db.session.add(user)
 
+    db.session.flush()  # ensure user has an id
+
+    if user.session_token is not None:
+        db.session.commit()
+        return render_template('auth/login.html',
+                               error='You\'re already signed in on another device. Sign out there first.',
+                               blocked=False,
+                               csrf_token=_get_csrf_token())
+
     user.record_login(_get_ip())
+    _issue_session_token(user)
     db.session.commit()
     login_user(user, remember=True, duration=timedelta(days=30))
 
