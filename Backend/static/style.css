@@ -574,6 +574,21 @@ input[type="number"] { max-width: 110px; }
   box-shadow: none;
 }
 
+.btn-upgraded {
+  background: var(--grey-200);
+  color: var(--grey-500);
+  cursor: default;
+  pointer-events: none;
+  box-shadow: none;
+}
+
+.btn-upgraded:hover {
+  background: var(--grey-200);
+  transform: none;
+  filter: none;
+  box-shadow: none;
+}
+
 /* ── Paywall card ────────────────────────────────────── */
 .paywall-card {
   border-left-color: var(--orange);
