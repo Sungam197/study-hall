@@ -181,7 +181,7 @@ def checkout():
         payment_method_types=['card'],
         line_items=[{'price': os.environ.get('STRIPE_PRICE_ID', ''), 'quantity': 1}],
         mode='payment',
-        success_url=url_for('payment_success', _external=True),
+        success_url=url_for('payment_success', _external=True) + '?session_id={CHECKOUT_SESSION_ID}',
         cancel_url=url_for('index', _external=True),
         customer_email=current_user.email,
         metadata={'user_id': str(current_user.id)},
@@ -191,6 +191,17 @@ def checkout():
 
 @app.route('/payment-success')
 def payment_success():
+    session_id = request.args.get('session_id')
+    if session_id and current_user.is_authenticated and not current_user.has_paid:
+        try:
+            checkout_session = stripe.checkout.Session.retrieve(session_id)
+            if checkout_session.payment_status == 'paid':
+                uid = (checkout_session.metadata or {}).get('user_id')
+                if uid and int(uid) == current_user.id:
+                    current_user.has_paid = True
+                    db.session.commit()
+        except Exception:
+            pass
     return render_template('payment_success.html')
 
 
