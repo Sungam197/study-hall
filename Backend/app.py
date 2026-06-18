@@ -211,14 +211,23 @@ def stripe_webhook():
     sig       = request.headers.get('Stripe-Signature', '')
     secret    = os.environ.get('STRIPE_WEBHOOK_SECRET', '')
 
+    app.logger.info(f"Webhook received, sig: {bool(sig)}, secret: {bool(secret)}")
+
     try:
         event = stripe.Webhook.construct_event(payload, sig, secret)
-    except (ValueError, stripe.SignatureVerificationError):
+    except ValueError as e:
+        app.logger.error(f"Webhook ValueError: {e}")
         return '', 400
+    except stripe.SignatureVerificationError as e:
+        app.logger.error(f"Webhook SignatureVerificationError: {e}")
+        return '', 400
+
+    app.logger.info(f"Webhook event type: {event['type']}")
 
     if event['type'] == 'checkout.session.completed':
         data    = event['data']['object']
         user_id = (data.get('metadata') or {}).get('user_id')
+        app.logger.info(f"Payment completed for user_id: {user_id}")
         if user_id:
             user = db.session.get(User, int(user_id))
             if user:
@@ -226,7 +235,6 @@ def stripe_webhook():
                 db.session.commit()
 
     return '', 200
-
 
 if __name__ == '__main__':
     app.run(debug=True)
