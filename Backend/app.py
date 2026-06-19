@@ -1,3 +1,4 @@
+from importlib.metadata import metadata
 import os
 import secrets
 from datetime import timedelta
@@ -226,7 +227,10 @@ def stripe_webhook():
 
     if event['type'] == 'checkout.session.completed':
         data    = event['data']['object']
-        user_id = (data.get('metadata') or {}).get('user_id')
+        try:
+            user_id = data.metadata['user_id']
+        except (KeyError, AttributeError):
+            user_id = None
         app.logger.info(f"Payment completed for user_id: {user_id}")
         if user_id:
             user = db.session.get(User, int(user_id))
