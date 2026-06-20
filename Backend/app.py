@@ -71,6 +71,19 @@ def inject_globals():
 with app.app_context():
     db.create_all()
 
+_TERMS_EXEMPT = {'terms', 'accept_terms', 'auth.logout', 'stripe_webhook', 'static'}
+
+# ── Terms acceptance gate ─────────────────────────────────────────────────────
+@app.before_request
+def enforce_terms_accepted():
+    if not current_user.is_authenticated:
+        return
+    if current_user.terms_accepted:
+        return
+    if request.endpoint is None or request.endpoint in _TERMS_EXEMPT:
+        return
+    return redirect(url_for('terms'))
+
 # ── Single-device enforcement ─────────────────────────────────────────────────
 @app.before_request
 def enforce_single_device():
@@ -97,6 +110,22 @@ def enforce_single_device():
 @app.route('/')
 def index():
     return render_template('index.html')
+
+
+@app.route('/terms')
+def terms():
+    return render_template('terms.html')
+
+
+@app.route('/accept-terms', methods=['POST'])
+def accept_terms():
+    if not current_user.is_authenticated:
+        return redirect(url_for('auth.login'))
+    if session.get('_csrf_token') != request.form.get('_csrf_token'):
+        return redirect(url_for('terms'))
+    current_user.terms_accepted = True
+    db.session.commit()
+    return redirect(url_for('index'))
 
 
 @app.route('/generate', methods=['POST'])

@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Terms &amp; Privacy — Study Hall</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <script>!function(){var t=localStorage.getItem('studyhall-theme')||((window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light');if(t==='dark')document.documentElement.setAttribute('data-theme','dark')}()</script>
+</head>
+<body>
+  <div class="geo-bg" aria-hidden="true">
+    <div class="geo geo-a"></div>
+    <div class="geo geo-b"></div>
+    <div class="geo geo-c"></div>
+    <div class="geo geo-d"></div>
+    <div class="geo geo-e"></div>
+  </div>
+
+  <div class="container" style="max-width: 740px">
+    <header>
+      <div class="header-row">
+        <div>
+          <h1>Study <span class="accent">Hall</span></h1>
+          <p>Review and accept our terms to continue</p>
+        </div>
+      </div>
+    </header>
+
+    <div class="card" style="animation-delay: 0.05s">
+      <h2>Terms of Service</h2>
+      <div class="terms-body">
+        <p class="terms-updated">Last updated: June 20, 2026</p>
+
+        <h3>1. Acceptance</h3>
+        <p>By creating an account or using Study Hall you agree to these Terms. If you do not agree, you may not use the service.</p>
+
+        <h3>2. What We Provide</h3>
+        <p>Study Hall uses AI to generate personalised quiz questions from notes you submit. Free accounts receive one quiz; Study Hall Pro accounts receive unlimited quizzes.</p>
+
+        <h3>3. Acceptable Use</h3>
+        <p>You agree <strong>not</strong> to:</p>
+        <ul>
+          <li><strong>Abuse or overload the service.</strong> Every quiz you generate incurs a real cost to us in AI API fees. Automated requests, bulk submissions, and any form of service exploitation are strictly prohibited.</li>
+          <li>Submit content that is illegal, harmful, or infringes third-party intellectual property rights.</li>
+          <li>Attempt to reverse-engineer, scrape, or probe any part of the service.</li>
+          <li>Share account credentials or grant others access to your account.</li>
+        </ul>
+
+        <h3>4. Account Termination &amp; Refunds</h3>
+        <p>We reserve the right to suspend or permanently terminate any account at our sole discretion for violations of these Terms, including abuse of the service. <strong>If your account is terminated due to abuse or a Terms violation, no refund will be issued</strong>, regardless of any remaining access period. Refund requests outside of abuse cases are considered on a case-by-case basis.</p>
+
+        <h3>5. Disclaimer of Warranties</h3>
+        <p>Study Hall is provided "as is" without warranties of any kind. AI-generated quiz content may contain inaccuracies. We are not responsible for exam outcomes or academic results.</p>
+
+        <h3>6. Changes to These Terms</h3>
+        <p>We may update these Terms at any time. Continued use of the service after changes are posted constitutes acceptance of the revised Terms.</p>
+      </div>
+    </div>
+
+    <div class="card" style="animation-delay: 0.1s">
+      <h2>Privacy Policy</h2>
+      <div class="terms-body">
+        <p class="terms-updated">Last updated: June 20, 2026</p>
+
+        <h3>1. Information We Collect</h3>
+        <ul>
+          <li>Your email address and display name (from registration or Google sign-in)</li>
+          <li>Your Google account ID (if you sign in with Google)</li>
+          <li>Your profile picture URL (from Google, if provided)</li>
+          <li>Your payment status — we do not store card details; Stripe handles all payment processing</li>
+          <li>Your IP address at the time of login</li>
+        </ul>
+
+        <h3>2. How We Use Your Information</h3>
+        <p>We use your data solely to provide and secure the service, process payments, and enforce these Terms.</p>
+
+        <h3>3. Third-Party Services</h3>
+        <ul>
+          <li><strong>Stripe</strong> — processes all payments. Your payment details are never stored by Study Hall.</li>
+          <li><strong>Google</strong> — used for optional OAuth sign-in.</li>
+          <li><strong>Anthropic</strong> — the notes you submit are sent to Anthropic's AI API to generate quiz questions. Do not include sensitive personal information in your notes.</li>
+        </ul>
+
+        <h3>4. Data Retention</h3>
+        <p>Your account data is retained for as long as your account is active. You may request deletion by contacting us.</p>
+
+        <h3>5. Security</h3>
+        <p>We use session-token enforcement, CSRF protection, and HTTPS to protect your data. No system is perfectly secure.</p>
+      </div>
+    </div>
+
+    <div class="card" style="animation-delay: 0.15s; border-left-color: var(--orange)">
+      <p style="color: var(--grey-500); font-size: 0.88rem; line-height: 1.7; margin-bottom: 1.25rem;">
+        By clicking <strong style="color: var(--grey-900)">I Accept</strong> you confirm you have read and agree to the Terms of Service and Privacy Policy above.
+      </p>
+      {% if current_user.is_authenticated %}
+      <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center">
+        <form method="POST" action="{{ url_for('accept_terms') }}">
+          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="btn btn-buy">I Accept</button>
+        </form>
+        <form method="POST" action="{{ url_for('auth.logout') }}">
+          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="btn btn-secondary">Decline &amp; Sign Out</button>
+        </form>
+      </div>
+      {% else %}
+      <a href="{{ url_for('auth.login') }}" class="btn btn-buy">Sign In to Continue</a>
+      {% endif %}
+    </div>
+
+    <p class="footer-note">Study Hall — Study Smarter</p>
+  </div>
+
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
