@@ -606,42 +606,6 @@ input[type="number"] { max-width: 110px; }
   justify-content: center;
 }
 
-/* ── Terms page ──────────────────────────────────────── */
-.terms-updated {
-  font-size: 0.73rem;
-  color: var(--grey-500);
-  margin-bottom: 1.25rem;
-  font-weight: 500;
-}
-
-.terms-body h3 {
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: var(--grey-700);
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-  margin: 1.25rem 0 0.45rem;
-}
-
-.terms-body p {
-  font-size: 0.9rem;
-  line-height: 1.8;
-  color: var(--grey-700);
-  margin-bottom: 0.5rem;
-}
-
-.terms-body ul {
-  padding-left: 1.4rem;
-  margin-bottom: 0.5rem;
-}
-
-.terms-body ul li {
-  font-size: 0.9rem;
-  line-height: 1.8;
-  color: var(--grey-700);
-  margin-bottom: 0.25rem;
-}
-
 /* ── Auth pages ──────────────────────────────────────── */
 .auth-container { max-width: 420px; }
 

@@ -18,9 +18,8 @@ class User(UserMixin, db.Model):
     last_login_ip = db.Column(db.String(45), nullable=True)
 
     # ── Payment ───────────────────────────────────────────
-    has_used_free  = db.Column(db.Boolean, default=False, nullable=False)
-    has_paid       = db.Column(db.Boolean, default=False, nullable=False)
-    terms_accepted = db.Column(db.Boolean, default=False, nullable=False)
+    has_used_free = db.Column(db.Boolean, default=False, nullable=False)
+    has_paid      = db.Column(db.Boolean, default=False, nullable=False)
 
     # ── Single-device enforcement ─────────────────────────
     session_token = db.Column(db.String(64), nullable=True, index=True)
