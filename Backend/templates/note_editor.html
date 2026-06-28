@@ -73,11 +73,10 @@
     >{{ note.content | safe }}</div>
   </div>
 
-  <!-- Generate quiz panel (fixed bottom) -->
+  <!-- Generate quiz panel (fixed bottom-right) -->
   <div class="generate-panel">
     <form id="generateForm" method="POST" action="{{ url_for('note_generate', note_id=note.id) }}">
       <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-      <label for="genCount">Generate</label>
       <input
         type="number"
         name="count"
@@ -86,8 +85,8 @@
         value="5"
         min="1"
         max="20"
+        title="Number of questions"
       >
-      <label for="genCount">questions from these notes</label>
       <button type="submit" class="btn btn-sm" id="generateBtn">
         <span class="btn-label">Generate Quiz</span>
         <span class="spinner" hidden></span>

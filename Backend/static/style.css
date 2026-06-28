@@ -747,6 +747,7 @@ input[type="number"] { max-width: 110px; }
   filter: drop-shadow(0 2px 6px rgba(0,0,0,0.08));
   color: var(--grey-700);
   transition: transform 0.15s ease, filter 0.15s ease,
+              left 0.3s cubic-bezier(0.22,1,0.36,1),
               background-color 0.4s ease, color 0.35s ease, border-color 0.35s ease;
 }
 
@@ -768,6 +769,8 @@ input[type="number"] { max-width: 110px; }
 body.sidebar-open .menu-btn span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
 body.sidebar-open .menu-btn span:nth-child(2) { opacity: 0; transform: scaleX(0); }
 body.sidebar-open .menu-btn span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+body.sidebar-open .menu-btn { left: calc(280px - 55px); }
 
 /* ── Sidebar Overlay ─────────────────────────────────── */
 .sidebar-overlay {
@@ -816,9 +819,9 @@ body.sidebar-open .sidebar { transform: translateX(0); }
 .sidebar-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   margin-bottom: 1.5rem;
   padding-bottom: 1rem;
+  padding-right: 2.5rem;
   border-bottom: 1.5px solid var(--grey-200);
 }
 
@@ -1204,38 +1207,33 @@ body.sidebar-open .sidebar { transform: translateX(0); }
   pointer-events: none;
 }
 
-/* ── Generate panel (fixed bottom bar in editor) ─────── */
+/* ── Generate panel (fixed bottom-right corner in editor) */
 .generate-panel {
   position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  bottom: 1.5rem;
+  right: 1.5rem;
   z-index: 40;
   background: var(--white);
-  border-top: 1.5px solid var(--grey-200);
-  padding: 0.7rem 1.5rem;
-  display: flex;
+  border: 1.5px solid var(--grey-200);
+  border-left: 3px solid var(--orange);
+  padding: 0.55rem 0.85rem;
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  gap: 0.65rem;
-  flex-wrap: wrap;
+  filter: drop-shadow(0 4px 16px rgba(0,0,0,0.12));
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
   transition: background-color 0.4s ease, border-color 0.35s ease;
 }
 
-.generate-panel label {
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: var(--grey-700);
-  text-transform: none;
-  letter-spacing: 0;
-  margin: 0;
-  transition: color 0.35s ease;
+.generate-panel form {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
 }
 
 .gen-count-input {
-  width: 68px !important;
-  max-width: 68px !important;
-  padding: 0.35rem 0.5rem !important;
+  width: 62px !important;
+  max-width: 62px !important;
+  padding: 0.3rem 0.4rem !important;
   font-size: 0.85rem !important;
   text-align: center;
 }
