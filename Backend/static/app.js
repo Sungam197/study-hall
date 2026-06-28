@@ -64,10 +64,11 @@ function _initSidebar() {
 
   if (!menuBtn) return;
 
-  function open()  { document.body.classList.add('sidebar-open'); }
-  function close() { document.body.classList.remove('sidebar-open'); }
+  function open()   { document.body.classList.add('sidebar-open'); }
+  function close()  { document.body.classList.remove('sidebar-open'); }
+  function toggle() { document.body.classList.toggle('sidebar-open'); }
 
-  menuBtn.addEventListener('click', open);
+  menuBtn.addEventListener('click', toggle);
   if (overlay)  overlay.addEventListener('click', close);
   if (closeBtn) closeBtn.addEventListener('click', close);
 
