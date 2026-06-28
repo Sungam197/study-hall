@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ note.title or 'Untitled Note' }} — Study Hall</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <script>!function(){var t=localStorage.getItem('studyhall-theme')||((window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light');if(t==='dark')document.documentElement.setAttribute('data-theme','dark')}()</script>
+</head>
+<body>
+  {% include '_sidebar.html' %}
+
+  <!-- Topbar -->
+  <div class="editor-topbar">
+    <input
+      type="text"
+      id="noteTitle"
+      class="editor-title-input"
+      value="{{ note.title | e }}"
+      placeholder="Note title…"
+      maxlength="255"
+      autocomplete="off"
+    >
+    <div class="editor-topbar-right">
+      <span class="save-status" id="saveStatus"></span>
+      <a href="{{ url_for('notebook') }}" class="btn btn-secondary btn-sm">&#8592; Notebook</a>
+    </div>
+  </div>
+
+  <!-- Formatting bar -->
+  <div class="format-bar">
+    <div class="format-group">
+      <button class="fmt-btn" data-cmd="formatBlock" data-val="h1" title="Heading 1">H1</button>
+      <button class="fmt-btn" data-cmd="formatBlock" data-val="h2" title="Heading 2">H2</button>
+      <button class="fmt-btn" data-cmd="formatBlock" data-val="h3" title="Heading 3">H3</button>
+      <button class="fmt-btn" data-cmd="formatBlock" data-val="p"  title="Normal text">P</button>
+    </div>
+    <div class="format-divider"></div>
+    <div class="format-group">
+      <button class="fmt-btn" data-cmd="bold"          title="Bold"><b>B</b></button>
+      <button class="fmt-btn" data-cmd="italic"        title="Italic"><i>I</i></button>
+      <button class="fmt-btn" data-cmd="underline"     title="Underline"><u>U</u></button>
+      <button class="fmt-btn" data-cmd="strikeThrough" title="Strikethrough"><s>S</s></button>
+    </div>
+    <div class="format-divider"></div>
+    <div class="format-group">
+      <button class="fmt-btn" data-cmd="insertUnorderedList" title="Bullet list">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="9" y1="6"  x2="20" y2="6"/><line x1="9" y1="12" x2="20" y2="12"/><line x1="9" y1="18" x2="20" y2="18"/><circle cx="4" cy="6"  r="1.5" fill="currentColor" stroke="none"/><circle cx="4" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="4" cy="18" r="1.5" fill="currentColor" stroke="none"/></svg>
+      </button>
+      <button class="fmt-btn" data-cmd="insertOrderedList" title="Numbered list">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="10" y1="6"  x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><text x="1" y="8"  font-size="7" fill="currentColor" stroke="none" font-weight="bold">1</text><text x="1" y="14" font-size="7" fill="currentColor" stroke="none" font-weight="bold">2</text><text x="1" y="20" font-size="7" fill="currentColor" stroke="none" font-weight="bold">3</text></svg>
+      </button>
+    </div>
+    <div class="format-divider"></div>
+    <div class="format-group">
+      <button class="fmt-btn spacing-btn" data-spacing="compact" title="Compact spacing">Compact</button>
+      <button class="fmt-btn spacing-btn active" data-spacing="normal"  title="Normal spacing">Normal</button>
+      <button class="fmt-btn spacing-btn" data-spacing="relaxed" title="Relaxed spacing">Relaxed</button>
+    </div>
+    <div class="format-divider"></div>
+    <div class="format-group">
+      <button class="fmt-btn" data-cmd="removeFormat" title="Clear formatting">Clear</button>
+    </div>
+  </div>
+
+  <!-- Editor body -->
+  <div class="editor-body">
+    <div
+      id="editor"
+      class="editor-content"
+      contenteditable="true"
+      spellcheck="true"
+    >{{ note.content | safe }}</div>
+  </div>
+
+  <!-- Generate quiz panel (fixed bottom) -->
+  <div class="generate-panel">
+    <form id="generateForm" method="POST" action="{{ url_for('note_generate', note_id=note.id) }}">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <label for="genCount">Generate</label>
+      <input
+        type="number"
+        name="count"
+        id="genCount"
+        class="gen-count-input"
+        value="5"
+        min="1"
+        max="20"
+      >
+      <label for="genCount">questions from these notes</label>
+      <button type="submit" class="btn btn-sm" id="generateBtn">
+        <span class="btn-label">Generate Quiz</span>
+        <span class="spinner" hidden></span>
+      </button>
+    </form>
+  </div>
+
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+  <script>
+    const CSRF    = {{ csrf_token() | tojson }};
+    const NOTE_ID = {{ note.id }};
+    const titleEl  = document.getElementById('noteTitle');
+    const editorEl = document.getElementById('editor');
+    const statusEl = document.getElementById('saveStatus');
+
+    // ── Format buttons ──────────────────────────────────
+    document.querySelectorAll('.fmt-btn[data-cmd]').forEach(function(btn) {
+      btn.addEventListener('mousedown', function(e) {
+        e.preventDefault();
+        var cmd = this.dataset.cmd;
+        var val = this.dataset.val || null;
+        document.execCommand(cmd, false, val);
+        editorEl.focus();
+        scheduleSave();
+      });
+    });
+
+    // ── Spacing buttons ─────────────────────────────────
+    document.querySelectorAll('.spacing-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('.spacing-btn').forEach(function(b) { b.classList.remove('active'); });
+        this.classList.add('active');
+        editorEl.classList.remove('spacing-compact', 'spacing-relaxed');
+        if (this.dataset.spacing !== 'normal') {
+          editorEl.classList.add('spacing-' + this.dataset.spacing);
+        }
+      });
+    });
+
+    // ── Auto-save (debounced 1.5s) ──────────────────────
+    var saveTimer = null;
+
+    function scheduleSave() {
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(save, 1500);
+    }
+
+    async function save() {
+      statusEl.textContent = 'Saving…';
+      try {
+        var res = await fetch('/notebook/' + NOTE_ID + '/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            _csrf_token: CSRF,
+            title: titleEl.value,
+            content: editorEl.innerHTML
+          })
+        });
+        statusEl.textContent = res.ok ? 'Saved' : 'Error';
+      } catch (_) {
+        statusEl.textContent = 'Error';
+      }
+      setTimeout(function() { statusEl.textContent = ''; }, 2000);
+    }
+
+    editorEl.addEventListener('input', scheduleSave);
+    titleEl.addEventListener('input', scheduleSave);
+
+    // ── Ensure content saved before generating quiz ─────
+    document.getElementById('generateForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      var form = this;
+      clearTimeout(saveTimer);
+      await save();
+      var btn = document.getElementById('generateBtn');
+      btn.querySelector('.btn-label').textContent = 'Building quiz…';
+      btn.querySelector('.spinner').hidden = false;
+      btn.disabled = true;
+      form.submit();
+    });
+  </script>
+</body>
+</html>

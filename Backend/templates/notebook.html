@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Notebook — Study Hall</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <script>!function(){var t=localStorage.getItem('studyhall-theme')||((window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light');if(t==='dark')document.documentElement.setAttribute('data-theme','dark')}()</script>
+</head>
+<body>
+  {% include '_sidebar.html' %}
+  <div class="geo-bg" aria-hidden="true">
+    <div class="geo geo-a"></div>
+    <div class="geo geo-b"></div>
+    <div class="geo geo-c"></div>
+    <div class="geo geo-d"></div>
+    <div class="geo geo-e"></div>
+  </div>
+  <div class="container">
+    <header>
+      <h1>Note<span class="accent">book</span></h1>
+      <p>Your notes, organized and ready to study from</p>
+    </header>
+
+    <div class="notebook-toolbar">
+      <div class="notebook-sort">
+        <a href="?sort=updated" class="sort-btn {% if sort == 'updated' %}active{% endif %}">Recent</a>
+        <a href="?sort=name"    class="sort-btn {% if sort == 'name'    %}active{% endif %}">A–Z</a>
+        <a href="?sort=created" class="sort-btn {% if sort == 'created' %}active{% endif %}">Oldest</a>
+      </div>
+      <form method="POST" action="{{ url_for('notebook_new') }}">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-sm">+ New Note</button>
+      </form>
+    </div>
+
+    {% if notes %}
+    <div class="notes-grid">
+      {% for note in notes %}
+      <div class="note-card" data-index="{{ loop.index0 }}">
+        <a href="{{ url_for('note_editor', note_id=note.id) }}" class="note-card-link">
+          <div class="note-card-title">{{ note.title or 'Untitled Note' }}</div>
+          <div class="note-card-preview">{{ (note.content | striptags)[:130] or 'Empty note…' }}</div>
+          <div class="note-card-meta">{{ note.updated_at.strftime('%b %d, %Y') }}</div>
+        </a>
+        <div class="note-card-actions">
+          <a href="{{ url_for('note_editor', note_id=note.id) }}" class="note-action-btn" title="Edit">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </a>
+          <form method="POST" action="{{ url_for('note_delete', note_id=note.id) }}" onsubmit="return confirm('Delete this note?')">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="note-action-btn note-action-delete" title="Delete">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+            </button>
+          </form>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="notes-empty">
+      <p>No notes yet — create your first one to get started.</p>
+      <form method="POST" action="{{ url_for('notebook_new') }}" style="margin-top:1.5rem">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn">Create First Note</button>
+      </form>
+    </div>
+    {% endif %}
+
+    <p class="footer-note">Notes auto-save as you type in the editor.</p>
+  </div>
+
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+  <script>staggerIn('.note-card', 60);</script>
+</body>
+</html>

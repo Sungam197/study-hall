@@ -1,6 +1,7 @@
 import os
+import re
 import secrets
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 import stripe
 from flask import Flask, render_template, request, session, redirect, url_for
@@ -10,7 +11,7 @@ from dotenv import load_dotenv
 
 from Backend.main import generate_questions, evaluate_answers
 from Backend.extensions import db, login_manager, migrate, oauth
-from Backend.models import User
+from Backend.models import User, Note
 
 load_dotenv()
 
@@ -238,6 +239,100 @@ def stripe_webhook():
                 db.session.commit()
 
     return '', 200
+
+# ── Notebook ──────────────────────────────────────────────────────────────────
+
+@app.route('/notebook')
+def notebook():
+    if not current_user.is_authenticated:
+        return redirect(url_for('auth.login'))
+    sort  = request.args.get('sort', 'updated')
+    query = Note.query.filter_by(user_id=current_user.id)
+    if sort == 'name':
+        notes = query.order_by(Note.title).all()
+    elif sort == 'created':
+        notes = query.order_by(Note.created_at.desc()).all()
+    else:
+        notes = query.order_by(Note.updated_at.desc()).all()
+    return render_template('notebook.html', notes=notes, sort=sort)
+
+
+@app.route('/notebook/new', methods=['POST'])
+def notebook_new():
+    if not current_user.is_authenticated:
+        return redirect(url_for('auth.login'))
+    if session.get('_csrf_token') != request.form.get('_csrf_token'):
+        return redirect(url_for('notebook'))
+    note = Note(user_id=current_user.id)
+    db.session.add(note)
+    db.session.commit()
+    return redirect(url_for('note_editor', note_id=note.id))
+
+
+@app.route('/notebook/<int:note_id>')
+def note_editor(note_id):
+    if not current_user.is_authenticated:
+        return redirect(url_for('auth.login'))
+    note = Note.query.filter_by(id=note_id, user_id=current_user.id).first_or_404()
+    return render_template('note_editor.html', note=note)
+
+
+@app.route('/notebook/<int:note_id>/save', methods=['POST'])
+def note_save(note_id):
+    if not current_user.is_authenticated:
+        return ('', 401)
+    note = Note.query.filter_by(id=note_id, user_id=current_user.id).first_or_404()
+    data = request.get_json(silent=True) or {}
+    if session.get('_csrf_token') != data.get('_csrf_token'):
+        return ('', 403)
+    note.title      = (data.get('title') or 'Untitled Note').strip()[:255] or 'Untitled Note'
+    note.content    = data.get('content') or ''
+    note.updated_at = datetime.utcnow()
+    db.session.commit()
+    return ('', 204)
+
+
+@app.route('/notebook/<int:note_id>/delete', methods=['POST'])
+def note_delete(note_id):
+    if not current_user.is_authenticated:
+        return redirect(url_for('auth.login'))
+    if session.get('_csrf_token') != request.form.get('_csrf_token'):
+        return redirect(url_for('notebook'))
+    note = Note.query.filter_by(id=note_id, user_id=current_user.id).first_or_404()
+    db.session.delete(note)
+    db.session.commit()
+    return redirect(url_for('notebook'))
+
+
+@app.route('/notebook/<int:note_id>/generate', methods=['POST'])
+def note_generate(note_id):
+    if not current_user.is_authenticated:
+        return redirect(url_for('auth.login'))
+    if current_user.has_used_free and not current_user.has_paid:
+        return render_template('index.html', paywall=True)
+    if session.get('_csrf_token') != request.form.get('_csrf_token'):
+        return redirect(url_for('note_editor', note_id=note_id))
+    note      = Note.query.filter_by(id=note_id, user_id=current_user.id).first_or_404()
+    count_raw = request.form.get('count', '5').strip()
+    try:
+        count = int(count_raw)
+        if not 1 <= count <= 20:
+            raise ValueError
+    except ValueError:
+        return redirect(url_for('note_editor', note_id=note_id))
+    plain = re.sub(r'\s+', ' ', re.sub(r'<[^>]+>', ' ', note.content)).strip()
+    if not plain:
+        return redirect(url_for('note_editor', note_id=note_id))
+    try:
+        questions = generate_questions(plain, count)
+    except Exception:
+        return redirect(url_for('note_editor', note_id=note_id))
+    if not current_user.has_used_free:
+        current_user.has_used_free = True
+        db.session.commit()
+    session['questions'] = questions
+    return render_template('quiz.html', questions=questions)
+
 
 if __name__ == '__main__':
     app.run(debug=True)

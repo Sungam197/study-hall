@@ -55,3 +55,29 @@ function staggerIn(selector, delayMs = 90) {
     el.classList.add('visible');
   });
 }
+
+// Sidebar toggle
+function _initSidebar() {
+  var menuBtn      = document.getElementById('menuBtn');
+  var overlay      = document.getElementById('sidebarOverlay');
+  var closeBtn     = document.getElementById('sidebarClose');
+
+  if (!menuBtn) return;
+
+  function open()  { document.body.classList.add('sidebar-open'); }
+  function close() { document.body.classList.remove('sidebar-open'); }
+
+  menuBtn.addEventListener('click', open);
+  if (overlay)  overlay.addEventListener('click', close);
+  if (closeBtn) closeBtn.addEventListener('click', close);
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') close();
+  });
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', _initSidebar);
+} else {
+  _initSidebar();
+}
