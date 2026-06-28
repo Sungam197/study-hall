@@ -4,7 +4,7 @@ import secrets
 from datetime import timedelta, datetime
 
 import stripe
-from flask import Flask, render_template, request, session, redirect, url_for
+from flask import Flask, render_template, request, session, redirect, url_for, send_from_directory
 from flask_login import current_user, logout_user
 from werkzeug.middleware.proxy_fix import ProxyFix
 from dotenv import load_dotenv
@@ -94,6 +94,12 @@ def enforce_single_device():
 
 
 # ── Routes ────────────────────────────────────────────────────────────────────
+
+@app.route('/favicon.ico')
+def favicon():
+    return send_from_directory(app.template_folder, 'logo.ico',
+                               mimetype='image/vnd.microsoft.icon')
+
 
 @app.route('/')
 def index():
