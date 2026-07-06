@@ -87,9 +87,13 @@ def enforce_single_device():
         session['_device_token'] = new_token
         db.session.commit()
     elif stored is None or stored != device_token:
-        # Token was cleared (user logged out on another device) → sign out here too
-        logout_user()
+        # Token was cleared (user logged out on another device) → sign out here too.
+        # logout_user() must run before session.clear(), since it flags the
+        # remember-me cookie for removal via session['_remember'] = 'clear',
+        # which a cleared session would silently discard (leaving the stale
+        # cookie to re-authenticate the user on the very next request).
         session.clear()
+        logout_user()
         return redirect(url_for('auth.login'))
 
 
