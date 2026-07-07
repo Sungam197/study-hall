@@ -44,6 +44,7 @@ def _safe_next(next_url: str | None) -> str:
 def _issue_session_token(user: User) -> None:
     token = secrets.token_hex(32)
     user.session_token = token
+    session.permanent = True
     session['_device_token'] = token
 
 

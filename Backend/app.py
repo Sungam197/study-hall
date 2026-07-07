@@ -31,6 +31,11 @@ app.config['REMEMBER_COOKIE_DURATION']  = timedelta(days=30)
 app.config['REMEMBER_COOKIE_HTTPONLY']  = True
 app.config['REMEMBER_COOKIE_SAMESITE'] = 'Lax'
 
+# Keep the session cookie (which carries our device token) alive as long as the
+# remember-me cookie, so a session cookie that outlives the browser restart
+# doesn't desync from a remember-me login that's still valid.
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
+
 # ── Stripe ────────────────────────────────────────────────────────────────────
 stripe.api_key = os.environ.get('STRIPE_SECRET_KEY')
 
@@ -84,6 +89,7 @@ def enforce_single_device():
         # Pre-feature session: assign a token so future logins are blocked
         new_token = secrets.token_hex(32)
         current_user.session_token = new_token
+        session.permanent = True
         session['_device_token'] = new_token
         db.session.commit()
     elif stored is None or stored != device_token:

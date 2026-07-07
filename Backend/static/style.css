@@ -37,6 +37,11 @@
   --progress-bg: rgba(17,17,19,0.92);
 }
 
+::selection {
+  background: var(--orange);
+  color: var(--white);
+}
+
 /* ── Geometric Background ────────────────────────────── */
 
 body {
